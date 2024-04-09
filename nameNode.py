@@ -8,6 +8,7 @@ app = Flask(__name__)
 
 dataNodes = {}
 database = {}
+not_available = []
 
 # Funciones auxiliares
 
@@ -22,13 +23,35 @@ def send_request(name) -> list[str]:
             try:
                 response = client.CheckStatus(Empty())
                 if response.status:
-                    datanodes = dataNodes[key]
+                    datanodes.append(dataNodes[key])
                     print(f"This node is available {key}")
                 else:
                     print(f"This node is available but there was an error {key}")
             except grpc.RpcError as e:
+                not_available.append(key)
                 print(f"This node isn't available {key}")
+    for node in not_available:
+        dataNodes.pop(node)
     return datanodes
+
+def drop_datanode() -> None:
+    global database, dataNodes, not_available
+    for key in dataNodes.keys():
+        info = dataNodes[key]
+        ports = "localhost:" + str(info['port'])
+        channel = grpc.insecure_channel(f"{ports}")
+        client = datanode_pb2_grpc.dataNodeStub(channel)
+        try:
+            response = client.CheckStatus(Empty())
+            if response.status:
+                print(f"This node is available {key}")
+            else:
+                print(f"This node is available but there was an error {key}")
+        except grpc.RpcError as e:
+            not_available.append(key)
+            print(f"This node isn't available {key} but there is a copy")
+    for node in not_available:
+        dataNodes.pop(node)
 
 # REST server
 
@@ -45,11 +68,14 @@ def login():
 def signal():
     data = request.json
     name = data['name']
-    if len(dataNodes) > 1:
+    if len(dataNodes) >= 1:
         nodes = send_request(name)
-        return jsonify({'message': 'Available DataNodes successful', 'nodes': nodes}), 200
+        if nodes == 1:
+            return jsonify({'message': 'Only 1 available datanode'}), 200
+        else: 
+            return jsonify({'message': 'Available DataNodes successful', 'nodes': nodes}), 200
     else:
-        return jsonify({'error': 'There are 0 or just 1 DataNodes available'}), 404
+        return jsonify({'error': 'There are only 1 datanode available'}), 404
 
 @app.route('/save_data', methods=['POST'])
 def save_data():
@@ -76,9 +102,10 @@ def search():
 
 @app.route('/index', methods=['GET'])
 def index():
-    try:
+    if len(dataNodes) != 0:
+        drop_datanode()
         return jsonify({'message': 'Indexing successful these are the available files', 'dataBase': database}), 200
-    except Exception as e:
+    else:
         return jsonify({'error': 'We cannot find any file'}), 404
 
 if __name__ == '__main__':

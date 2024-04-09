@@ -31,13 +31,13 @@ message Sended {
     bool sended = 1;
 }
 
-message SendDataRequest {
-    repeated string list_data = 1; 
-    string string_data1 = 2; 
-    string string_data2 = 3; 
+message ReceiveDataRequest {
+    bytes block = 1; 
+    string filename = 2; 
+    string name = 3;
 }
 
-message SendDataResponse {
+message ReceiveDataResponse {
     bool success = 1;
 }
 
@@ -46,5 +46,5 @@ service dataNode {
     rpc ReadBlock(ReadBlockRequest) returns (ReadBlockResponse) {}
     rpc CheckStatus (google.protobuf.Empty) returns (Response) {}
     rpc SendIndex (SendIndexRequest) returns (Sended) {}
-    rpc SendData (SendDataRequest) returns (SendDataResponse) {}
+    rpc ReceiveData (ReceiveDataRequest) returns (ReceiveDataResponse) {}
 }

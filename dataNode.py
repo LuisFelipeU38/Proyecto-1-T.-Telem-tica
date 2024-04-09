@@ -13,6 +13,7 @@ name = ""
 port = ""
 base_url = "http://localhost:5000"
 o_datanodes = []
+copy_database: dict[str, dict[str, list]] = {}
 
 # Funciones auxiliares
 # Generar nombre automaticamente
@@ -38,7 +39,7 @@ def call_signal_method():
     data = {'name': name}
     response = requests.get(url, json=data)
     data = response.json()
-    o_datanodes.append(data['nodes'])
+    o_datanodes = data['nodes']
     if response.status_code == 200:
         print("Success: ", data)
     else:
@@ -60,22 +61,28 @@ def save_data_namenode(parameters):
     else:
         print("Error:", message.status_code, response.json())
 
-def send_data_to_datanode(target_address, list_data, string_data1, string_data2):
-    with grpc.insecure_channel(target_address) as channel:
-        stub = datanode_pb2_grpc.dataNodeStub(channel)
-        request = datanode_pb2.SendDataRequest(
-            list_data=list_data,
-            string_data1=string_data1,
-            string_data2=string_data2
-        )
-        try:
-            response = stub.SendData(request)
-            if response.success:
-                print("Data successfully sent to the DataNode.")
-            else:
-                print("DataNode responded with failure.")
-        except grpc.RpcError as e:
-            print(f"Failed to send data: {e}")
+# Para hacer replicación usamos este metodo para enviar a otro datanode y replicarlo allí
+def send_data_to_datanode(parameters, filename):
+    data = parameters[filename]
+    port = "localhost:" + str(data['port'])
+    name = data['name']
+    blocks = data['data']
+    with grpc.insecure_channel(port) as channel:
+        for block in blocks:
+            stub = datanode_pb2_grpc.dataNodeStub(channel)
+            request = datanode_pb2.ReceiveDataRequest(
+                block = block,
+                filename = filename,
+                name = name
+            )
+            try:
+                response = stub.ReceiveData(request)
+                if response.success:
+                    print("Data successfully sent to the DataNode.")
+                else:
+                    print("DataNode responded with failure.")
+            except grpc.RpcError as e:
+                print(f"Failed to send data: {e}")
 
 # Servidor con gRPC
 
@@ -83,16 +90,22 @@ class dataNode(datanode_pb2_grpc.dataNodeServicer):
     def __init__(self):
         self.block_storage: dict[str, dict] = {}  
 
-    def SendData(self, request, context):
-        list_data = request.list_data
-        string_data1 = request.string_data1
-        string_data2 = request.string_data2
-        
-        print("Received list data:", list_data)
-        print("String 1:", string_data1)
-        print("String 2:", string_data2)
+    def ReceiveData(self, request, context):
+        global copy_database
+        block = request.block
+        filename = request.filename
+        name = request.name
+        if name in copy_database:
+            if filename in copy_database[name]:
+                copy_database[name][filename].append(block)
+            else:
+                copy_database[name][filename] = [block]
+        else:
+            copy_database[name] = {filename: [block]} 
+        print("Received list with data")
+        print("Filename:", filename)
 
-        return datanode_pb2.SendDataResponse(success=True)
+        return datanode_pb2.ReceiveDataResponse(success=True)
 
     def WriteBlock(self, request, context):
         f_name = request.name
@@ -122,10 +135,13 @@ class dataNode(datanode_pb2_grpc.dataNodeServicer):
         call_signal_method()
         if len(o_datanodes) > 1:
             node_c: dict[str, Any] = random.choice(o_datanodes)
+        elif len(o_datanodes) == 0:
+            node_c = {'name': '0000', 'port': '0000'}
         else:
             node_c = o_datanodes[0]
         self.block_storage[filename]['copy'] = node_c['name']
         self.block_storage[filename]['port_copy'] = node_c['port']
+        send_data_to_datanode(self.block_storage, filename)
         for key in self.block_storage.keys():
             save_data_namenode(self.block_storage[key])
             return datanode_pb2.Sended(sended=True)
