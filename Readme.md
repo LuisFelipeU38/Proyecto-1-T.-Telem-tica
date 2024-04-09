@@ -2,7 +2,7 @@
 
 ## Estudiantes
 - **Nombre:** Juan Pablo Ramirez, Luis Felipe Urquijo Vargas, David Sanchez Arboleda
-- **Correo Electrónico:** jurami35@eafit.edu.co, lfurquijov@eafit.edu.co, dasancheza@
+- **Correo Electrónico:** jurami35@eafit.edu.co, lfurquijov@eafit.edu.co, dasancheza@eafit.edu.co
 
 ## Profesor
 - **Nombre:** Alvaro Enrique Ospina Sanjuan
@@ -58,5 +58,21 @@ Escalabilidad: El sistema debe escalar eficientemente según se agregan más nod
 -	Para la comunicación entre el cliente y los DataNode usaremos interfaces gRPC para los procesos de escritura por medio del canal de datos.
 -	Para la comunicación entre DataNode’s, por medio de un canal de datos se harán las respectivas replicaciones de los bloques en cada DataNode según sea especificado.
 
+Estas comunicaciones serian de la forma representrada en la arquitectura a continuación: 
 # Arquitectura
 [![imagen-2024-04-07-230939054.png](https://i.postimg.cc/6pdXwdNV/imagen-2024-04-07-230939054.png)](https://postimg.cc/Js4g5H0t)
+
+## Entorno de Desarrollo y Configuraciones
+
+## Lenguaje de Programación
+
+## Librerías Utilizadas
+- **grpcio** v1.62.0
+- **grpcio-tools** v1.62.0
+- **Flask** v3.0.0
+- **requests** v2.31.0
+
+## Instalación de Librerías
+Para instalar las librerías necesarias, ejecuta el siguiente comando en una terminal:
+
+pip install grpcio grpcio-tools Flask requests
