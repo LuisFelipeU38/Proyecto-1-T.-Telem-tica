@@ -119,9 +119,8 @@ class dataNode(datanode_pb2_grpc.dataNodeServicer):
 
     def ReadBlock(self, request, context):
         name = request.name
-        
         if name in self.block_storage:
-            return datanode_pb2.ReadBlockResponse(data=self.block_storage[name])
+            return datanode_pb2.ReadBlockResponse(data=self.block_storage[name]['data'])
         else:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("Block not found")

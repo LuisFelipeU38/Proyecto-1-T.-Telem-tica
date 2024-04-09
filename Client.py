@@ -9,6 +9,9 @@ options = [
     ('grpc.max_receive_message_length', 50 * 1024 * 1024),
 ]
 
+file  = []
+name = ""
+
 def upload_file(datanodes, file_name, file_address):
 
     with open(file_address, "rb") as file:
@@ -50,16 +53,22 @@ def upload_file(datanodes, file_name, file_address):
 
 
 
-def download_file(stub, file_name):
-    response = stub.ReadFile(datanode_pb2.ReadFileRequest(file_name=file_name))
-    
-    if response.data:
-        save_path =  file_name  # Ruta de destino personalizada "D:/FCD/TopicosTelematicaRepo/proyecto1/" +
-        with open(save_path, 'wb') as file:
-            file.write(response.data)
-        print(f"File {file_name} downloaded at {save_path}.")
-    else:
-        print(f"File {file_name} not found.")
+def download_blocks():
+    blocks = []
+    for node in file:
+        if node['leader_available']:
+            channel = grpc.insecure_channel("localhost:" + str(node['Port']), options=options)
+        else:
+            channel = grpc.insecure_channel("localhost:" + str(node['Port Copy']), options=options)
+        stub = datanode_pb2_grpc.dataNodeStub(channel)
+        data = stub.ReadBlock(datanode_pb2.ReadBlockRequest(name=node['Filename']))
+        blocks.append(data.data)
+    with open(name, 'wb') as final_file:
+        for node_block in blocks:
+            for block in node_block:
+                final_file.write(block)
+        
+        print(f"Archivo {name} descargado y reconstruido correctamente.")
 
 def index(base_url):
     """
@@ -90,6 +99,22 @@ def search(base_url):
         print(f"Error during search: {e}")
         return {}
 
+def get_file(base_url, filename):
+    global file, name
+    try:
+        response = requests.get(f"{base_url}/get_file", json=filename)
+        if response.status_code == 200:
+            print("Search successful. Available files:")
+            data = response.json() 
+            file = data['Nodes']
+            name = filename
+            download_blocks()
+            print(data)
+        else:
+            print("File not found or error during search.")
+    except Exception as e:
+        print(f"Error during search: {e}")
+
 
 def run():
     # Establecer conexión con el servidor DFS para gRPC
@@ -101,27 +126,23 @@ def run():
     option = menu()
     
     if option == "1":
-        file_name = "juego.exe"
-        file_address = "C:/Users/admin/Downloads/juego.exe"
+        file_name = "luis.jpg"
+        file_address = "C:/Users/admin/Downloads/luis.jpg"
         datanode = search(base_url)
         upload_file(datanode, file_name, file_address)
     elif option == "2":
-        file_name = "C:/Users/admin/Downloads/MapaProcesosEOS.png"
-        download_file(stub, file_name)
-    elif option == "3":
         index(base_url)
-    elif option == "4":
-        file_name = input("Ingrese el nombre del archivo a buscar: ")
-        search(base_url)
+    elif option == "3":
+        file_name = input("What is the name of the file to download?")
+        get_file(base_url, file_name)
     else:
         print("Opción no válida.")
 
 def menu():
     print("Bienvenido al Cliente del Sistema DFS")
     print("1. Subir archivo al servidor")
-    print("2. Descargar archivo del servidor")
-    print("3. Indexar nodos de datos disponibles")
-    print("4. Buscar un archivo específico")
+    print("2. Indexar nodos de datos disponibles")
+    print("3. Buscar un archivo específico")
     return input("Seleccione una opción: ")
 
 if __name__ == '__main__':

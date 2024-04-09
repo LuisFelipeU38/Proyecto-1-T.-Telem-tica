@@ -35,7 +35,7 @@ def send_request(name) -> list[str]:
     return datanodes
 
 def drop_datanode() -> None:
-    global database, dataNodes, not_available
+    global dataNodes, not_available
     for key in dataNodes.keys():
         info = dataNodes[key]
         ports = "localhost:" + str(info['port'])
@@ -96,6 +96,21 @@ def save_data():
 def search():
     try:
         return jsonify({'message': 'Search successful these are the available datanodes', 'dataNodes': dataNodes}), 200
+    except Exception as e:
+        return jsonify({'error': 'We cannot find any available datanode'}), 404
+
+@app.route('/get_file', methods=['GET'])
+def get_file():
+    drop_datanode()
+    filename = request.json
+    if filename in database:
+        info = database[filename]
+        for node in info:
+            node['leader_available'] = node['Datanode Name'] not in not_available
+    else:
+        return jsonify({'message': 'File not found', 'filename' : filename}), 200
+    try:
+        return jsonify({'message': 'This file is in this datanodes', 'Nodes': database[filename]}), 200
     except Exception as e:
         return jsonify({'error': 'We cannot find any available datanode'}), 404
     
