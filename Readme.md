@@ -1,5 +1,4 @@
 # Proyecto: Topicos de Telemática ST0263
-
 ## Estudiantes
 - **Nombre:** Juan Pablo Ramirez, Luis Felipe Urquijo Vargas, David Sanchez Arboleda
 - **Correo Electrónico:** jurami35@eafit.edu.co, lfurquijov@eafit.edu.co, dasancheza@eafit.edu.co
