@@ -11,7 +11,6 @@ database = {}
 not_available = []
 
 # Funciones auxiliares
-
 def send_request(name) -> list[str]:
     datanodes = []
     for key in dataNodes.keys():
@@ -54,7 +53,6 @@ def drop_datanode() -> None:
         dataNodes.pop(node)
 
 # REST server
-
 @app.route('/login', methods=['POST'])
 def login():
     global dataNodes
@@ -75,7 +73,7 @@ def signal():
         else: 
             return jsonify({'message': 'Available DataNodes successful', 'nodes': nodes}), 200
     else:
-        return jsonify({'error': 'There are only 1 datanode available'}), 404
+        return jsonify({'error': 'There are not datanode available'}), 404
 
 @app.route('/save_data', methods=['POST'])
 def save_data():

@@ -4,19 +4,19 @@ import grpc
 import requests
 from google.protobuf.empty_pb2 import Empty
 
-# Configuraciones
+# Configurations
 options = [
     ('grpc.max_receive_message_length', 50 * 1024 * 1024),
 ]
 
-file  = []
+file = []
 name = ""
 
 def upload_file(datanodes, file_name, file_address):
 
     with open(file_address, "rb") as file:
         block_size = 1024 * 1024 
-        datanode_keys = list(datanodes.keys()) 
+        datanode_keys = list(datanodes.keys())
         datanode_count = len(datanode_keys)
         block_index = 0
         arr_nodes = set()
@@ -39,9 +39,9 @@ def upload_file(datanodes, file_name, file_address):
                         print(f"Error sending the block {selected_datanode_key}")
                         break
                     else:
-                        print(f"Block successfully sended {selected_datanode_key}")
+                        print(f"Block successfully sent {selected_datanode_key}")
                 except grpc.RpcError as e:
-                    print(f"Error on the connection with the datanode {selected_datanode_key}: {e}")
+                    print(f"Error in the connection with the datanode {selected_datanode_key}: {e}")
                     break
                 
                 block_index += 1
@@ -50,8 +50,6 @@ def upload_file(datanodes, file_name, file_address):
             channel = grpc.insecure_channel("localhost:" + str(node_info['port']))
             stub = datanode_pb2_grpc.dataNodeStub(channel)
             response = stub.SendIndex(datanode_pb2.SendIndexRequest(filename=file_name))
-
-
 
 def download_blocks():
     blocks = []
@@ -68,11 +66,11 @@ def download_blocks():
             for block in node_block:
                 final_file.write(block)
         
-        print(f"Archivo {name} descargado y reconstruido correctamente.")
+        print(f"File {name} downloaded and reconstructed successfully.")
 
 def index(base_url):
     """
-    Función para obtener los nodos de datos disponibles.
+    Function to get available data nodes.
     """
     try:
         response = requests.get(f"{base_url}/index")
@@ -89,7 +87,7 @@ def search(base_url):
         response = requests.get(f"{base_url}/search")
         if response.status_code == 200:
             print("Search successful. Available files:")
-            data = response.json() 
+            data = response.json()
             print(data)
             return data['dataNodes']
         else:
@@ -105,7 +103,7 @@ def get_file(base_url, filename):
         response = requests.get(f"{base_url}/get_file", json=filename)
         if response.status_code == 200:
             print("Search successful. Available files:")
-            data = response.json() 
+            data = response.json()
             file = data['Nodes']
             name = filename
             download_blocks()
@@ -115,35 +113,37 @@ def get_file(base_url, filename):
     except Exception as e:
         print(f"Error during search: {e}")
 
-
 def run():
-    # Establecer conexión con el servidor DFS para gRPC
+    # Establish connection with the DFS server for gRPC
     channel = grpc.insecure_channel('localhost:50051', options=options)
     stub = datanode_pb2_grpc.dataNodeStub(channel)
 
-    base_url = "http://localhost:5000"  # Asegúrate de ajustar esto a la URL de tu servidor Flask
+    base_url = "http://localhost:5000"  # Make sure to adjust this to your Flask server's URL
     
     option = menu()
-    
-    if option == "1":
-        file_name = "luis.jpg"
-        file_address = "C:/Users/admin/Downloads/luis.jpg"
-        datanode = search(base_url)
-        upload_file(datanode, file_name, file_address)
-    elif option == "2":
-        index(base_url)
-    elif option == "3":
-        file_name = input("What is the name of the file to download?")
-        get_file(base_url, file_name)
-    else:
-        print("Opción no válida.")
+    while option != 4:
+        if option == "1":
+            file_name = "luis.jpg"
+            file_address = "C:/Users/admin/Downloads/luis.jpg"
+            datanode = search(base_url)
+            upload_file(datanode, file_name, file_address)
+        elif option == "2":
+            index(base_url)
+        elif option == "3":
+            file_name = input("What is the name of the file to download?")
+            get_file(base_url, file_name)
+        elif option == "4":
+            option = 4
+        else:
+            print("Invalid option.")
 
 def menu():
-    print("Bienvenido al Cliente del Sistema DFS")
-    print("1. Subir archivo al servidor")
-    print("2. Indexar nodos de datos disponibles")
-    print("3. Buscar un archivo específico")
-    return input("Seleccione una opción: ")
+    print("Welcome to the DFS Client System")
+    print("1. Upload file to the server")
+    print("2. Index available data nodes")
+    print("3. Search for a specific file")
+    print("4. Exit")
+    return input("Select an option: ")
 
 if __name__ == '__main__':
     run()
